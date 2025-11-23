@@ -28,7 +28,6 @@ resource "terraform_data" "main" {
     host     = aws_instance.main.private_ip
   }
 
-   # terraform copies this file to catalogue server
   provisioner "file" {
     source = "bootstrap.sh"
     destination = "/tmp/bootstrap.sh"
@@ -37,7 +36,6 @@ resource "terraform_data" "main" {
   provisioner "remote-exec" {
     inline = [
         "chmod +x /tmp/bootstrap.sh",
-        # "sudo sh /tmp/catalogue.sh"
         "sudo sh /tmp/bootstrap.sh ${var.component} ${var.environment}"
     ]
   }
@@ -48,46 +46,41 @@ resource "terraform_data" "main" {
 resource "aws_ec2_instance_state" "main" {
   instance_id = aws_instance.main.id
   state       = "stopped"
-  depends_on = [ terraform_data.main ]
+  depends_on = [terraform_data.main]
 }
-
 # Taking AMI from instance after stopping
 
 resource "aws_ami_from_instance" "main" {
   name               = "${local.common_name_suffix}-${var.component}-ami"
   source_instance_id = aws_instance.main.id
-  depends_on = [ aws_ec2_instance_state.main ]
+  depends_on = [aws_ec2_instance_state.main]
   tags = merge (
         local.common_tags,
         {
-            Name = "${local.common_name_suffix}-${var.component}-ami" # roboshop-dev-${var.component}-ami
+            Name = "${local.common_name_suffix}-${var.component}-ami" # roboshop-dev-mongodb
         }
-    )
-  
+  )
 }
-
 # target group
 
 resource "aws_lb_target_group" "main" {
-  name        = "${local.common_name_suffix}-${var.component}"
-  port        = 8080
-  protocol    = "HTTP"
-  vpc_id      = local.vpc_id
+  name     = "${local.common_name_suffix}-${var.component}"
+  port     = local.tg_port # if frontend port is 80, otherwise port is 8080
+  protocol = "HTTP"
+  vpc_id   = local.vpc_id
   deregistration_delay = 60 # waiting period before deleting the instance
-  
+
   health_check {
     healthy_threshold = 2
     interval = 10
     matcher = "200-299"
-    path = "/health"
-    port = 8080
+    path = local.health_check_path
+    port = local.tg_port
     protocol = "HTTP"
     timeout = 2
     unhealthy_threshold = 2
-
   }
 }
-
 # Launch template for components
 
 resource "aws_launch_template" "main" {
@@ -104,6 +97,7 @@ resource "aws_launch_template" "main" {
   update_default_version = true
 
   # tags attached to the instance
+
   tag_specifications {
     resource_type = "instance"
 
@@ -116,6 +110,7 @@ resource "aws_launch_template" "main" {
   }
 
   # tags attached to the volume created by instance
+  
   tag_specifications {
     resource_type = "volume"
 

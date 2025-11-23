@@ -12,7 +12,10 @@ variable "domain_name" {
 }
 variable "component" {
 
+
 }
 variable "rule_priority" {
+
+
   
 }
