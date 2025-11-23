@@ -22,6 +22,10 @@ data "aws_ssm_parameter" "ami_id"{
   name = "/${var.project_name}/${var.environment}/ami_id"
 }
 
+data "aws_ssm_parameter" "vpc_id" {
+  name = "/${var.project_name}/${var.environment}/vpc_id"
+}
+
 data "aws_ssm_parameter" "sg_id" {
   name = "/${var.project_name}/${var.environment}/${var.component}_sg_id"
 }
