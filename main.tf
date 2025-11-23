@@ -9,7 +9,7 @@ resource "aws_instance" "main" {
     tags = merge (
         local.common_tags,
         {
-            Name = "${local.common_name_suffix}-${var.component}" # roboshop-dev-catalogue
+            Name = "${local.common_name_suffix}-${var.component}" # roboshop-dev-mongodb
         }
     )
 }
